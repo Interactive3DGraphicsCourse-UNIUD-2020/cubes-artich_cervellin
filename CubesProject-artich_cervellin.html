@@ -1,0 +1,188 @@
+<html>
+	<head>
+		<title>
+			Cubes Project 2021 - Eleonora Artich, Caterina Cervellin
+		</title>
+		<style>
+			body {
+				font-family: Monospace;
+				background-image: linear-gradient(#7dcac7, #a9efe0, #f1fdff);
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			canvas {
+				width: 100%;
+				height: 100%;
+			}
+		</style>
+		<script src="lib/three.min.js"></script>
+		<script src="lib/stats.min.js"></script>
+		<script src="lib/Coordinates.js"></script>
+		<script src="lib/OrbitControls.js"></script>
+	</head>
+	<body>
+		<script>
+			var scene, camera, renderer, controls, stats;
+
+			var smokeCube;
+			var smokeCubeMaterial;
+			var SMOKE_CUBE_INITIAL_POSITION = new THREE.Vector3(1, 12.5, 0);
+
+			function Start() {
+				camera = new THREE.PerspectiveCamera(
+					75,
+					window.innerWidth / window.innerHeight,
+					0.1,
+					1000
+				);
+
+				renderer = new THREE.WebGLRenderer({
+					antialias: true,
+					alpha: true,
+				});
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				//renderer.setClearColor( 0xffffffff );
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+				renderer.shadowMap.enabled = true;
+				document.body.appendChild(renderer.domElement);
+	
+				camera.position.set(-9.4, 4.4, -33);
+				camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+				// AGGIUNGO MODELLO
+				var loader = new THREE.ObjectLoader();
+				loader.load(
+					'modules/scene.json',
+
+					function (loadedScene) {
+						console.log('scene', loadedScene);
+
+						scene = loadedScene;
+
+						hemiLight = new THREE.HemisphereLight(
+							0xffffff,
+							0xffffff,
+							0.9
+						);
+						hemiLight.color.setHSL(0.8, 1, 0.8);
+						hemiLight.groundColor.setHSL(0.095, 1, 0.75);
+						hemiLight.position.set(0, 500, 0);
+						scene.add(hemiLight);
+
+						dirLight = new THREE.DirectionalLight(0xffffff, 1);
+						dirLight.color.setHSL(0.1, 1, 0.95);
+						dirLight.position.set(-1, 1.75, 1);
+						dirLight.position.multiplyScalar(50);
+						scene.add(dirLight);
+						dirLight.castShadow = true;
+						dirLight.shadow.mapSize.width = 1024;
+						dirLight.shadow.mapSize.height = 1024;
+
+						// ADD SMOKE CUBE
+						var geometry = new THREE.BoxGeometry(2, 2, 2);
+
+						smokeCubeMaterial = new THREE.MeshBasicMaterial({
+							color: 0xffffff,
+							transparent: true,
+							opacity: 0.5,
+						});
+						smokeCube = new THREE.Mesh(geometry, smokeCubeMaterial);
+
+						smokeCube.position.copy(SMOKE_CUBE_INITIAL_POSITION);
+
+						scene.add(smokeCube);
+					}
+				);
+
+				//var geometry = new THREE.BoxGeometry(1,1,1);
+
+				//const loader = new THREE.TextureLoader();
+
+				/*
+			loader.load('textures/11635.jpg', (texture => {
+				var material = new THREE.MeshPhongMaterial( { map: texture } );
+				var cube = new THREE.Mesh( geometry, material );
+				cube.castShadow = true;
+				cube.receiveShadow = true;
+			
+				scene.add( cube );
+			}));
+			*/
+
+				/*
+
+
+			// GROUND
+			var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
+			var groundMat = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x050505 } );
+			groundMat.color.setHSL( 0.095, 1, 0.75 );
+			var ground = new THREE.Mesh( groundGeo, groundMat );
+			ground.position.y = -0.5;
+			ground.rotation.x = -Math.PI/2;
+			scene.add( ground );
+			ground.receiveShadow = true;
+			*/
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				document.body.appendChild(stats.domElement);
+
+				// uncomment if you need to draw coordinate axes when building the scene
+				//Coordinates.drawAllAxes();
+
+				controls = new THREE.OrbitControls(camera);
+				controls.addEventListener('change', Render);
+			}
+
+			function updateSmokePosition() {
+				if (smokeCube) {
+					var MAX_SMOKE_DISTANCE = 10;
+					var position = smokeCube.position;
+					if (
+						position.x >
+						SMOKE_CUBE_INITIAL_POSITION.x + MAX_SMOKE_DISTANCE
+					) {
+						position.x = SMOKE_CUBE_INITIAL_POSITION.x;
+					}
+					if (
+						position.y >
+						SMOKE_CUBE_INITIAL_POSITION.y + MAX_SMOKE_DISTANCE
+					) {
+						position.y = SMOKE_CUBE_INITIAL_POSITION.y;
+					}
+					position.x += 0.03;
+					position.y += 0.03;
+					smokeCube.position.copy(position);
+
+					var scale = Math.max(position.x / MAX_SMOKE_DISTANCE, 0.2);
+					var opacity = 1 - scale;
+					smokeCubeMaterial.opacity = opacity;
+					smokeCube.scale.set(scale, scale, scale);
+					//console.log(position.x + ',' + position.y + ',' + position.z);
+					//alert(position.x + ',' + position.y + ',' + position.z);
+				}
+			}
+
+			function Update(tick) {
+				requestAnimationFrame(Update);
+				controls.update();
+				stats.update();
+
+				updateSmokePosition();
+
+				Render();
+			}
+
+			function Render() {
+				renderer.render(scene, camera);
+			}
+
+			Start();
+			Update();
+		</script>
+	</body>
+</html>
